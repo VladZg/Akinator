@@ -18,4 +18,6 @@ enum GameModes
     SHOW_MODE       = 4,
 };
 
+char Negation_str[] = "not";
+
 #endif

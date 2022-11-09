@@ -1,15 +1,18 @@
 #include "./Config.h"
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <cstdio>
 #include <cstring>
 #include "./Constants.h"
 #include "./DefineColourConsts.h"
+#include "./Stack/Stack.h"
 
 struct Node
 {
     char* data;
     Node* left;
     Node* right;
+    Node* prev;
 };
 
 struct Tree
@@ -20,7 +23,9 @@ struct Tree
 
 int TreeCtor(Tree* tree, Node* root);
 int NodeCtor(Node* node, char* data);
-int NodeConnect(Node* left, Node* right, Node* root);
+int TreeDtor(Tree* tree);
+int NodeDtor(Node* node);
+int NodeConnect(Tree* tree, Node* left, Node* right, Node* root);
 void NodePreorderPrint (const Node* node, FILE* stream);
 void NodeInorderPrint  (const Node* node, FILE* stream);
 void NodePostorderPrint(const Node* node, FILE* stream);
@@ -30,16 +35,18 @@ int IsObjectExist(const Node* node, const char* obj_name);
 #define TEXT_FOR_PRONOUNCING_FILENAME "./TextForPronouncing.txt"
 #define DATABASE_DUMP_HTML_FILE "./DatabaseDump.html"
 
-int ReadDatabaseToTree(FILE* database_file, Tree* tree);
+void ReadDatabaseToTree(FILE* database_file, Node* node, char* new_node_name, int* is_second_node);
 int WriteTreeInDatabase(FILE* database_file, Tree* tree);
 void WriteNodeInDatabase(FILE* database_file, Node* node);
 int WriteObjectDefinition(FILE* out_stream, FILE* pronouncing_stream, Node* node, const char* object_name);
 int StartGame();
 int FinishGame();
 int StartGuessMode(Tree* tree);
-int GuessObject(Node* node, const char* object_name);
+int GuessObject(Tree* tree, Node* node);
 int StartDefinitionMode(Tree* tree);
 int GiveObjectDefinition(Tree* tree, const char* object_name);
+int FindNode(const Node* node, const char* data, Stack* path_stack);
+Stack* FindNodePath(const Tree* tree, const char* data);
 int StartComparingMode(Tree* tree);
 int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_name);
 int ShowDatabase();
@@ -58,12 +65,63 @@ int main()
     return 1;
 }
 
+#include <unistd.h>
 
-int ReadDatabaseToTree(FILE* database_file, Tree* tree)
+void ReadDatabaseToTree(FILE* database_file, Node* node, char* name, int* is_second_node)
 {
-    // fread(file);
+    char cur = fgetc(database_file);
 
-    return 1;
+    if (cur == '(')
+    {
+        Node* new_node = (Node*) calloc(1, sizeof(Node));
+        // fprintf(stdout, "(");
+
+        char* new_node_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+        fscanf(database_file, " \"%[^\"]s", new_node_name);
+        fprintf(stdout, " \"%s\" ", new_node_name);
+
+        NodeCtor(new_node, new_node_name);
+
+        if (!is_second_node)
+            node->left = new_node;
+
+        else
+            node->right = new_node;
+
+        new_node->prev = node;
+
+        fgetc(database_file);
+        fgetc(database_file);
+
+        cur = fgetc(database_file);
+
+        if (cur == '(')
+        {
+            *is_second_node = 1;
+            ungetc('(', database_file);
+            ReadDatabaseToTree(database_file, new_node, new_node_name, is_second_node);
+        }
+
+        else if (cur == ')')
+        {
+            // fprintf(stdout, ")");
+            cur = fgetc(database_file);
+
+            if ((*is_second_node) && (cur == '('))
+            {
+                ungetc('(', database_file);
+                *is_second_node = 0;
+                ReadDatabaseToTree(database_file, node, new_node_name, is_second_node);
+            }
+
+            else
+            {
+                // fprintf(stdout, ")");
+                *is_second_node = 1;
+                ReadDatabaseToTree(database_file, node, new_node_name, is_second_node);
+            }
+        }
+    }
 }
 
 int WriteTreeInDatabase(FILE* database_file, Tree* tree)
@@ -81,49 +139,51 @@ static void FprintfNSymb(FILE* stream, char symb, size_t n_symb)
 
 void WriteNodeInDatabase(FILE* database_file, Node* node)
 {
-    FprintfNSymb(database_file, ' ', Database_format_shift);
+    NodePreorderPrint(node, database_file);
 
-    fprintf(database_file, "{");
-
-    if (!node) return;
-
-    fprintf(database_file, " \"%s\" ", node->data);
-
-    if (!(node->left || node->right))
-    {
-        fprintf(database_file, "}");
-    }
-
-    else
-    {
-        if (node->left)
-        {
-            fprintf(database_file, "\n");
-
-            Database_format_shift += 4;
-
-            WriteNodeInDatabase(database_file, node->left);
-
-            if (Database_format_shift >= 4) Database_format_shift -= 4;
-        }
-
-        if (node->left)
-        {
-            fprintf(database_file, "\n");
-
-            Database_format_shift += 4;
-
-            WriteNodeInDatabase(database_file, node->right);
-
-            if (Database_format_shift >= 4) Database_format_shift -= 4;
-        }
-
-        FprintfNSymb(database_file, ' ', Database_format_shift);
-        fprintf(database_file, "\n");
-
-        FprintfNSymb(database_file, ' ', Database_format_shift);
-        fprintf(database_file, "}");
-    }
+//     FprintfNSymb(database_file, ' ', Database_format_shift);
+//
+//     fprintf(database_file, "{");
+//
+//     if (!node) return;
+//
+//     fprintf(database_file, " \"%s\" ", node->data);
+//
+//     if (!(node->left || node->right))
+//     {
+//         fprintf(database_file, "}");
+//     }
+//
+//     else
+//     {
+//         if (node->left)
+//         {
+//             fprintf(database_file, "\n");
+//
+//             Database_format_shift += 4;
+//
+//             WriteNodeInDatabase(database_file, node->left);
+//
+//             if (Database_format_shift >= 4) Database_format_shift -= 4;
+//         }
+//
+//         if (node->left)
+//         {
+//             fprintf(database_file, "\n");
+//
+//             Database_format_shift += 4;
+//
+//             WriteNodeInDatabase(database_file, node->right);
+//
+//             if (Database_format_shift >= 4) Database_format_shift -= 4;
+//         }
+//
+//         FprintfNSymb(database_file, ' ', Database_format_shift);
+//         fprintf(database_file, "\n");
+//
+//         FprintfNSymb(database_file, ' ', Database_format_shift);
+//         fprintf(database_file, "}");
+//     }
 }
 
 int CleanInputBuffer()
@@ -175,15 +235,21 @@ void PrintPath(int mode, FILE* stream)
 
 int StartGame()
 {
-    FILE* database_file = fopen(DATABASE_FILENAME, "w+");
+    FILE* database_file = fopen(DATABASE_FILENAME, "r");
 
-    Node root = {};
-    NodeCtor(&root, Root_data);
+    Node* root = (Node*) calloc(1, sizeof(Node));
+    char* root_data = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+    root_data = strcpy(root_data, Root_data);
+    NodeCtor(root, root_data);
 
     Tree tree = {};
-    TreeCtor(&tree, &root);
+    TreeCtor(&tree, root);
 
-    // ReadDatabaseToTree(database_file, &tree);
+    char* new_node_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+
+    int is_second_node = 0;
+    ReadDatabaseToTree(database_file, tree.root, new_node_name, &is_second_node);
+    fclose(database_file);
 
     fprintf(stdout, "Вас приветствует Akinator!\n\n"
 
@@ -197,36 +263,6 @@ int StartGame()
                     "Для выхода из игры нажмите 'q', находясь в главном меню\n");
 
     char mode = '\0';
-
-    char str1[] = "aboba_left";
-    Node node1 = {};
-    NodeCtor(&node1, str1);
-    char str2[] = "aboba_right";
-    Node node2 = {};
-    NodeCtor(&node2, str2);
-    NodeConnect(&node1, &node2, &root);
-
-    char str3[] = "aboba1";
-    Node node3 = {};
-    NodeCtor(&node3, str3);
-    NodeConnect(&node3, nullptr, &node1);
-
-    char str4[] = "aboba2";
-    Node node4 = {};
-    NodeCtor(&node4, str4);
-    NodeConnect(nullptr, &node4, &node2);
-
-//     fprintf(stdout, "Preorder: ");
-//     NodePreorderPrint(&root, stdout);
-//     fprintf(stdout, "\n");
-//
-//     fprintf(stdout, "Inorder: ");
-//     NodeInorderPrint(&root, stdout);
-//     fprintf(stdout, "\n");
-//
-//     fprintf(stdout, "Postorder: ");
-//     NodePostorderPrint(&root, stdout);
-//     fprintf(stdout, "\n");
 
     do
     {
@@ -291,8 +327,9 @@ int StartGame()
 
     } while (mode != 'q');
 
+    database_file = fopen(DATABASE_FILENAME, "w");
     WriteTreeInDatabase(database_file, &tree);
-
+    TreeDtor(&tree);
     fclose(database_file);
 
     return 1;
@@ -343,28 +380,101 @@ int TreeCtor(Tree* tree, Node* root)
 
 int NodeCtor(Node* node, char* data)
 {
-    *node = {data, nullptr, nullptr};
+    *node = {data, nullptr, nullptr, nullptr};
 
     return 1;
 }
 
-int NodeConnect(Node* left, Node* right, Node* root)
+int TreeDtor(Tree* tree)
+{
+    tree->n_nodes = 0;
+
+    return NodeDtor(tree->root);
+}
+
+int NodeDtor(Node* node)
+{
+    if (!node)
+        return 0;
+
+    if (node->left) NodeDtor(node->left);
+
+    if (node->right) NodeDtor(node->right);
+
+    free(node->data);
+
+    node->data  = nullptr;
+    node->left  = nullptr;
+    node->right = nullptr;
+    node->prev  = nullptr;
+
+    free(node);
+
+    node = nullptr;
+
+    return 1;
+}
+
+int NodeConnect(Tree* tree, Node* left, Node* right, Node* root)
 {
     if (root)
     {
-        root->left  = left;
-        root->right = right;
+        if (left)
+        {
+            root->left  = left;
+            left->prev  = root;
+            tree->n_nodes++;
+        }
+
+        if (right)
+        {
+            root->right  = right;
+            right->prev  = root;
+            tree->n_nodes++;
+        }
     }
 
     return 1;
 }
 
-// Node* FindNode(const Tree* tree, const char* data)
-// {
-//
-//
-//     return &node;
-// }
+int FindNode(const Node* node, const char* data, Stack* path_stack)
+{
+    if (strcasecmp(node->data, data))
+    {
+        if (node->left && node->right)
+        {
+            if (FindNode(node->left, data, path_stack))
+            {
+                StackPush(path_stack, node->data);
+                return 1;
+            }
+
+            else if (FindNode(node->right, data, path_stack))
+            {
+                StackPush(path_stack, node->data);
+                StackPush(path_stack, Negation_str);
+                return 1;
+            }
+
+            return 0;
+        }
+
+        return 0;
+    }
+
+    return 1;
+}
+
+Stack* FindNodePath(const Tree* tree, const char* data)
+{
+    Stack* path_stack = (Stack*) calloc(1, sizeof(Stack));
+    *path_stack = {};
+    StackCtor((*path_stack));
+
+    FindNode(tree->root, data, path_stack);
+
+    return path_stack;
+}
 
 void NodePreorderPrint(const Node* node, FILE* stream)
 {
@@ -433,40 +543,110 @@ int StartGuessMode(Tree* tree)
     CleanInputBuffer();
 
     PrintPath(GUESSING_MODE, stdout);
-    fprintf(stdout, "Введите название объекта:\n");
+    fprintf(stdout, "Загадайте объект и введите 's' для начала отгадывания:\n");
     PrintPath(GUESSING_MODE, stdout);
 
-    char object_name[MAX_OBJECT_NAME] = {};
-    fscanf(stdin, "%[^\n]s", object_name);
+    char user_cmd[MAX_OBJECT_NAME] = {};
+    fscanf(stdin, "%[^\n]s", user_cmd);
 
-    while (strcasecmp(object_name, "q"))
+    while (strcasecmp(user_cmd, "q"))
     {
-        GuessObject(tree->root, object_name);
+        PrintPath(GUESSING_MODE, stdout);
+
+        if (!strcasecmp(user_cmd, "s"))
+        {
+            // fprintf(stdout, "Objected \"%s\" guessed!\n\n", object_name);
+            GuessObject(tree, tree->root);
+        }
+
+        else
+            fprintf(stdout, "There is no such command or mode\n");
 
         CleanInputBuffer();
 
         PrintPath(GUESSING_MODE, stdout);
-        fprintf(stdout, "Введите назвние нового объекта:\n");
+        fprintf(stdout, "Заново загадайте объект и введите 's' для начала отгадывания:\n");
         PrintPath(GUESSING_MODE, stdout);
 
-        fscanf(stdin, "%[^\n]s", object_name);
+        fscanf(stdin, "%[^\n]s", user_cmd);
     }
 
     return 1;
 }
 
-int GuessObject(Node* node, const char* object_name)
+int GuessObject(Tree* tree, Node* node)
 {
+    CleanInputBuffer();
+
+    // if
+    fprintf(stdout, "¿ Is your object \"%s\" ?\n", node->data);
+
+    PrintPath(GUESSING_MODE, stdout);
+    char user_answer = '\0';
+    fscanf(stdin, "%c", &user_answer);
     PrintPath(GUESSING_MODE, stdout);
 
-    if (IsObjectExist(node, object_name))
+    if (user_answer == '+')
     {
-        fprintf(stdout, "Objected \"%s\" guessed!\n\n", object_name);
+        if (node->left)
+        {
+            GuessObject(tree, node->left);
+        }
 
+        else
+        {
+            fprintf(stdout, "GUESSED! YOUR OBJECT IS \"%s\"\n\n", node->data);
+            return 1;
+        }
+    }
+
+    else if (user_answer == '-')
+    {
+        if (node->right)
+        {
+            GuessObject(tree, node->right);
+        }
+
+        else
+        {
+            CleanInputBuffer();
+
+            fprintf(stdout, "Задайте характеристику новому объекту:\n");
+            PrintPath(GUESSING_MODE, stdout);
+            char* new_object_question = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+            fscanf(stdin, "%[^\n]s", new_object_question);
+
+            CleanInputBuffer();
+
+            PrintPath(GUESSING_MODE, stdout);
+            fprintf(stdout, "Введите имя нового объекта:\n");
+            PrintPath(GUESSING_MODE, stdout);
+            char* new_object_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+            fscanf(stdin, "%[^\n]s", new_object_name);
+
+            Node* node_right = (Node*) calloc(1, sizeof(Node));
+            NodeCtor(node_right, node->data);
+
+            Node* node_left = (Node*) calloc(1, sizeof(Node));
+            NodeCtor(node_left, new_object_name);
+
+            node->data = new_object_question;
+
+            NodeConnect(tree, node_left, node_right, node);
+
+            PrintPath(GUESSING_MODE, stdout);
+            fprintf(stdout, "NEW OBJECT \"%s\" THAT IS \"%s\" ADDED\n\n", new_object_name, new_object_question);
+
+            return 1;
+        }
     }
 
     else
-        fprintf(stdout, "There is no such object\n\n");
+    {
+        fprintf(stdout, "You can answer '+' ot '-' only! Try it again:\n");
+        PrintPath(GUESSING_MODE, stdout);
+        GuessObject(tree, node);
+    }
 
     return 1;
 }
@@ -498,11 +678,19 @@ int StartDefinitionMode(Tree* tree)
     return 1;
 }
 
-int WriteObjectDefinition(FILE* out_stream, FILE* pronouncing_stream, Node* node, const char* object_name)
+int WriteObjectDefinition(FILE* out_stream, FILE* pronouncing_stream, Stack* path_stack, const char* object_name)
 {
     PrintPath(DEFINITION_MODE, out_stream);
-    fprintf(out_stream, "test");
-    fprintf(pronouncing_stream, "test");
+
+    fprintf(out_stream, "\"%s\" is ", object_name);
+    fprintf(pronouncing_stream, "\"%s\" is ", object_name);
+
+    while (path_stack->size > 0)
+    {
+        char* tmp_part_of_definition = StackPop(path_stack);
+        fprintf(out_stream, "%s ", tmp_part_of_definition);
+        fprintf(pronouncing_stream, "%s ", tmp_part_of_definition);
+    }
 
     fprintf(out_stream, "\n\n");
 
@@ -517,9 +705,14 @@ int GiveObjectDefinition(Tree* tree, const char* object_name)
 
     if (IsObjectExist(tree->root, object_name))
     {
+        Stack* path_stack = FindNodePath(tree, object_name);
+
         fprintf(stdout, "Object \"%s\" definition:\n", object_name);
         fprintf(file, "Object \"%s\" definition:\n", object_name);
-        WriteObjectDefinition(stdout, file, tree->root, object_name);
+        WriteObjectDefinition(stdout, file, path_stack, object_name);
+
+        StackDtor(path_stack);
+        free(path_stack);
     }
 
     else
@@ -530,7 +723,7 @@ int GiveObjectDefinition(Tree* tree, const char* object_name)
 
     fclose(file);
 
-    system("festival --tts " TEXT_FOR_PRONOUNCING_FILENAME);
+    system("festival --tts " TEXT_FOR_PRONOUNCING_FILENAME); //" --language russian"
 
     return 1;
 }
@@ -582,7 +775,55 @@ int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_na
 
     if (IsObjectExist(tree->root, object1_name) && IsObjectExist(tree->root, object2_name))
     {
-        fprintf(stdout, "Both objects exist\n\n");
+        FILE* file = fopen(TEXT_FOR_PRONOUNCING_FILENAME, "w+");
+
+        Stack* path1_stack = FindNodePath(tree, object1_name);
+        Stack* path2_stack = FindNodePath(tree, object2_name);
+
+        fprintf(stdout, "Both objects are < ");
+
+        char* object1_part_of_definition = nullptr;
+        char* object2_part_of_definition = nullptr;
+
+        while ((path1_stack->size > 0) && (path2_stack->size > 0))
+        {
+            object1_part_of_definition = StackPop(path1_stack);
+            object2_part_of_definition = StackPop(path2_stack);
+
+            if (!strcmp(object1_part_of_definition, object2_part_of_definition))
+                fprintf(stdout, "\"%s\" ", object1_part_of_definition);
+
+            else
+            {
+                StackPush(path1_stack, object1_part_of_definition);
+                StackPush(path2_stack, object2_part_of_definition);
+                break;
+            }
+        }
+
+        fprintf(stdout, "> BUT:\n");
+        PrintPath(COMPARING_MODE, stdout);
+        fprintf(stdout, "\"%s\" is ", object1_name);
+
+        while (path1_stack->size > 0)
+            fprintf(stdout, "\"%s\" ", StackPop(path1_stack));
+
+        fprintf(stdout, "MEANWHILE:\n");
+        PrintPath(COMPARING_MODE, stdout);
+        fprintf(stdout, "\"%s\" is ", object2_name);
+
+        while (path2_stack->size > 0)
+            fprintf(stdout, "\"%s\" ", StackPop(path2_stack));
+
+        fprintf(stdout, "\n\n");
+
+        StackDtor(path1_stack);
+        StackDtor(path2_stack);
+        free(path1_stack);
+        free(path2_stack);
+
+        fclose(file);
+
         return 1;
     }
 
