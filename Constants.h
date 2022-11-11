@@ -2,6 +2,7 @@
 #define CONSTANTS_H
 
 #include <stdlib.h>
+#include <cstring>
 
 enum Constants
 {
@@ -18,6 +19,14 @@ enum GameModes
     SHOW_MODE       = 4,
 };
 
-char Negation_str[] = "not";
+enum DumpModes
+{
+    DEBUG_DUMP_MODE = 0,
+    GAME_DUMP_MODE  = 1,
+};
+
+#define TEXT_FOR_PRONOUNCING_FILENAME "./TextForPronouncing.txt"
+#define DATABASE_DUMP_HTML_FILE "./DatabaseDump.html"
+#define TEXT_FOR_DOT_DUMP_FILENAME "./TextForDatabaseDump.dot"
 
 #endif
