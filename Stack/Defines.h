@@ -1,9 +1,10 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
-#include "Config.h"
+#include "./Config.h"
 #include <stdlib.h>
-#include "Log.h"
+#include "./Assert.h"
+#include "./Log.h"
 
 # ifndef NDEBUG
 
@@ -13,14 +14,6 @@
                 #cmd, __LINE__, __FILE__, __PRETTY_FUNCTION__);                 \
         cmd;                                                                    \
     }
-
-    #define  ASSERT( condition )                                                \
-    {                                                                           \
-        if (!(condition))                                                       \
-            WriteLog("Error in '%s' in line %d in file \"%s\" in %s\n",         \
-                    #condition, __LINE__, __FILE__, __PRETTY_FUNCTION__);       \
-    }
-
 
     #define ASSERT_OK( stack_ptr )                                              \
     {                                                                           \
@@ -44,7 +37,6 @@
     }
 
 #else
-    #define ASSERT(    condition ) {}
     #define ASSERT_OK( stack )     {}
     #define PRINT(     cmd )       {}
 

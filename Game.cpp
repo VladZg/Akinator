@@ -3,27 +3,29 @@
 #include <time.h>
 #include "./Constants.h"
 #include "./DefineColourConsts.h"
+#include "./Stack/Assert.h"
 #include "./Stack/Stack.h"
 #include "./Tree.h"
 #include "./Database.h"
+#include "./Speaker.h"
 #include "./Game.h"
 
-// char NotStr[]   = "not";
-// char NeStr[]    = "ne";
-// char MinusStr[] = "---";
-
-// char* Negation_strings[] = {NotStr, NeStr, MinusStr};
 char Negation_str[] = "not";
 size_t TreeNodeNumber = 0;
 
-// static char* PickNegationString()
-// {
-//     return Negation_strings[rand() % 3];
-// }
+static int CleanInputBuffer()
+{
+    while (getchar() != '\n');
+
+    return 1;
+}
 
 int StartGame(const char* database_filename)
 {
+    ASSERT(database_filename != nullptr);
+
     FILE* database_file = fopen(database_filename, "r");
+    ASSERT(database_file != nullptr);
 
     char database_name[MAX_DATABASE_NAME] = {};
     ReadDatabaseName(database_file, database_name);
@@ -31,7 +33,7 @@ int StartGame(const char* database_filename)
     Tree tree = {};
     TreeCtor(&tree);
 
-    tree.root = ReadDatabaseToTree(&tree, database_file, tree.root);
+    tree.root = ReadDatabaseToTree(database_file, &tree);
     fclose(database_file);
 
     fprintf(stdout, "Вас приветствует Akinator!\n\n"
@@ -108,12 +110,13 @@ int StartGame(const char* database_filename)
 
         CleanInputBuffer();
 
-        // fprintf(stdout, "\n\n\n");
-
     } while (mode != 'q');
 
     database_file = fopen(database_filename, "w");
+    ASSERT(database_file != nullptr);
+
     WriteTreeInDatabase(database_file, &tree, database_name);
+
     TreeDtor(&tree);
     fclose(database_file);
 
@@ -149,22 +152,10 @@ int ShowRools()
     return 1;
 }
 
-int FinishGame()
-{
-    fprintf(stdout, "\nИгра окончена!\n");
-
-    return 1;
-}
-
-int CleanInputBuffer()
-{
-    while (getchar() != '\n');
-
-    return 1;
-}
-
 void PrintPath(int mode, FILE* stream)
 {
+    ASSERT(stream != nullptr);
+
     if (mode == MENU_MODE)
     {
         fprintf(stream, KBLU "~/" KNRM "$ ");
@@ -203,8 +194,21 @@ void PrintPath(int mode, FILE* stream)
     fprintf(stream, KNRM "$ ");
 }
 
+int FinishGame()
+{
+    fprintf(stdout, "\nИгра окончена!\n");
+
+    return 1;
+}
+
 int FindNode(const Node* node, const char* data, Stack* path_stack)
 {
+    ASSERT(node != nullptr);
+    ASSERT(data != nullptr);
+    ASSERT(path_stack != nullptr);
+    ASSERT_OK(path_stack);
+    VERIFY_NODE(node);
+
     if (strcasecmp(node->data, data))
     {
         if (node->left && node->right)
@@ -233,7 +237,13 @@ int FindNode(const Node* node, const char* data, Stack* path_stack)
 
 Stack* FindNodePath(const Tree* tree, const char* data)
 {
+    ASSERT(tree != nullptr);
+    ASSERT(data != nullptr);
+    VERIFY_TREE(tree);
+
     Stack* path_stack = (Stack*) calloc(1, sizeof(Stack));
+    ASSERT(path_stack != nullptr);
+
     *path_stack = {};
     StackCtor((*path_stack));
 
@@ -242,25 +252,11 @@ Stack* FindNodePath(const Tree* tree, const char* data)
     return path_stack;
 }
 
-int IsObjectExist(const Node* node, const char* obj_name)
-{
-    if (!strcasecmp(node->data, obj_name))
-        return 1;
-
-    if (!(node->left || node->right))
-        return 0;
-
-    if (node->left)
-        if (IsObjectExist(node->left, obj_name)) return 1;
-
-    if (node->right)
-        if (IsObjectExist(node->right, obj_name)) return 1;
-
-    return 0;
-}
-
 int StartGuessMode(Tree* tree)
 {
+    ASSERT(tree != nullptr);
+    VERIFY_TREE(tree);
+
     CleanInputBuffer();
 
     PrintPath(GUESSING_MODE, stdout);
@@ -297,9 +293,14 @@ int StartGuessMode(Tree* tree)
 
 int GuessObject(Tree* tree, Node* node)
 {
+    ASSERT(tree != nullptr);
+    ASSERT(node != nullptr);
+    VERIFY_TREE(tree);
+    VERIFY_NODE(node);
+
     CleanInputBuffer();
 
-    fprintf(stdout, "¿ Is your object \"%s\" ?\n", node->data);
+    FmtSayAndWrite("¿ Is your object %s ?\n", node->data);
 
     PrintPath(GUESSING_MODE, stdout);
     char user_answer = '\0';
@@ -316,7 +317,7 @@ int GuessObject(Tree* tree, Node* node)
 
         else
         {
-            fprintf(stdout, "GUESSED! YOUR OBJECT IS \"%s\"!!! IT WAS REALLY OBVIOUS...\n\n", node->data);
+            FmtSayAndWrite("GUESSED! YOUR OBJECT IS %s!!! IT WAS REALLY OBVIOUS... HA-HA!\n\n", node->data);
             return 1;
         }
     }
@@ -336,7 +337,10 @@ int GuessObject(Tree* tree, Node* node)
 
             fprintf(stdout, "Задайте характеристику новому объекту:\n");
             PrintPath(GUESSING_MODE, stdout);
+
             char* new_object_question = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+            ASSERT(new_object_question != nullptr);
+
             fscanf(stdin, "%[^\n]s", new_object_question);
 
             CleanInputBuffer();
@@ -344,19 +348,24 @@ int GuessObject(Tree* tree, Node* node)
             PrintPath(GUESSING_MODE, stdout);
             fprintf(stdout, "Введите имя нового объекта:\n");
             PrintPath(GUESSING_MODE, stdout);
+
             char* new_object_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+            ASSERT(new_object_name != nullptr);
+
             fscanf(stdin, "%[^\n]s", new_object_name);
 
             if (IsObjectExist(tree->root, new_object_name))
             {
                 FILE* file = fopen(TEXT_FOR_PRONOUNCING_FILENAME, "w+");
+                ASSERT(file != nullptr);
 
                 PrintPath(GUESSING_MODE, stdout);
-                fprintf(stdout, "Object \"%s\" is already exist:\n", new_object_name);
+                FmtSayAndWrite("Object \"%s\" is already exist:\n", new_object_name);
                 PrintPath(GUESSING_MODE, stdout);
 
                 Stack* path_stack = FindNodePath(tree, new_object_name);
-                WriteObjectDefinition(stdout, file, path_stack, new_object_name);
+                ASSERT_OK(path_stack);
+                WriteObjectDefinition(stdout, path_stack, new_object_name);
 
                 fclose(file);
                 free(new_object_question);
@@ -368,9 +377,11 @@ int GuessObject(Tree* tree, Node* node)
             else
             {
                 Node* node_right = (Node*) calloc(1, sizeof(Node));
+                ASSERT(node_right != nullptr);
                 NodeCtor(node_right, node->data);
 
                 Node* node_left = (Node*) calloc(1, sizeof(Node));
+                ASSERT(node_left != nullptr);
                 NodeCtor(node_left, new_object_name);
 
                 node->data = new_object_question;
@@ -404,6 +415,9 @@ int GuessObject(Tree* tree, Node* node)
 
 int StartDefinitionMode(Tree* tree)
 {
+    ASSERT(tree != nullptr);
+    VERIFY_TREE(tree);
+
     CleanInputBuffer();
 
     PrintPath(DEFINITION_MODE, stdout);
@@ -429,30 +443,35 @@ int StartDefinitionMode(Tree* tree)
     return 1;
 }
 
-int WriteObjectDefinition(FILE* out_stream, FILE* pronouncing_stream, Stack* path_stack, const char* object_name)
+int WriteObjectFeatures(FILE* out_stream, Stack* path_stack)
 {
-    fprintf(out_stream, "\"%s\" is ", object_name);
-    fprintf(pronouncing_stream, "\"%s\" is ", object_name);
-
-    if (path_stack->size == 0)
-    {
-        fprintf(out_stream, "root object");
-        fprintf(pronouncing_stream, "root object");
-    }
+    ASSERT(out_stream != nullptr);
+    ASSERT_OK(path_stack);
 
     while (path_stack->size > 0)
     {
         char* tmp_part_of_definition = StackPop(path_stack);
-        fprintf(out_stream, "%s ", tmp_part_of_definition);
-        fprintf(pronouncing_stream, "%s ", tmp_part_of_definition);
+        FmtSayAndWrite("%s ", tmp_part_of_definition);
 
         if (strcasecmp(tmp_part_of_definition, Negation_str) && path_stack->size)
-        {
             fprintf(out_stream, "\b, ");
-            fprintf(pronouncing_stream, "\b, ");
-        }
     }
 
+    return 1;
+}
+
+int WriteObjectDefinition(FILE* out_stream, Stack* path_stack, const char* object_name)
+{
+    ASSERT(out_stream != nullptr);
+    ASSERT(object_name != nullptr);
+    ASSERT_OK(path_stack);
+
+    FmtSayAndWrite("%s is ", object_name);
+
+    if (path_stack->size == 0)
+        SayAndWrite("root object");
+
+    WriteObjectFeatures(out_stream, path_stack);
     fprintf(out_stream, "\n\n");
 
     return 1;
@@ -460,38 +479,36 @@ int WriteObjectDefinition(FILE* out_stream, FILE* pronouncing_stream, Stack* pat
 
 int GiveObjectDefinition(Tree* tree, const char* object_name)
 {
-    FILE* file = fopen(TEXT_FOR_PRONOUNCING_FILENAME, "w+");
+    ASSERT(tree != nullptr);
+    ASSERT(object_name != nullptr);
+    VERIFY_TREE(tree);
 
     PrintPath(DEFINITION_MODE, stdout);
 
     if (IsObjectExist(tree->root, object_name))
     {
         Stack* path_stack = FindNodePath(tree, object_name);
+        ASSERT_OK(path_stack);
 
         fprintf(stdout, "Object \"%s\" definition:\n", object_name);
-        fprintf(file, "Object \"%s\" definition:\n", object_name);
         PrintPath(DEFINITION_MODE, stdout);
-        WriteObjectDefinition(stdout, file, path_stack, object_name);
+        WriteObjectDefinition(stdout, path_stack, object_name);
 
         StackDtor(path_stack);
         free(path_stack);
     }
 
     else
-    {
         fprintf(stdout, "There is no object called \"%s\"\n\n", object_name);
-        fprintf(file, "There is no object called \"%s\"\n\n", object_name);
-    }
-
-    fclose(file);
-
-    system("festival --tts " TEXT_FOR_PRONOUNCING_FILENAME); //" --language russian"
 
     return 1;
 }
 
 int StartComparingMode(Tree* tree)
 {
+    ASSERT(tree != nullptr);
+    VERIFY_TREE(tree);
+
     CleanInputBuffer();
 
     PrintPath(COMPARING_MODE, stdout);
@@ -532,6 +549,11 @@ int StartComparingMode(Tree* tree)
 
 int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_name)
 {
+    ASSERT(tree != nullptr);
+    ASSERT(object1_name != nullptr);
+    ASSERT(object2_name != nullptr);
+    VERIFY_TREE(tree);
+
     PrintPath(COMPARING_MODE, stdout);
 
     char* object1_part_of_definition = nullptr;
@@ -540,75 +562,70 @@ int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_na
     if (IsObjectExist(tree->root, object1_name) && IsObjectExist(tree->root, object2_name))
     {
         FILE* file = fopen(TEXT_FOR_PRONOUNCING_FILENAME, "w+");
+        ASSERT(file != nullptr);
 
         Stack* path1_stack = FindNodePath(tree, object1_name);
         Stack* path2_stack = FindNodePath(tree, object2_name);
 
-        if ((path1_stack->size > 0) && (path2_stack->size > 0))
+        if (!strcasecmp(object1_name, object2_name))
         {
-            object1_part_of_definition = StackPop(path1_stack);
-            object2_part_of_definition = StackPop(path2_stack);
-            StackPush(path1_stack, object1_part_of_definition);
-            StackPush(path2_stack, object2_part_of_definition);
+            FmtSayAndWrite("That is the same object %s, that is ", object1_name);
+            WriteObjectFeatures(stdout, path1_stack);
+        }
 
-            if (!strcmp(object1_part_of_definition, object2_part_of_definition))
+        else
+        {
+            if ((path1_stack->size > 0) && (path2_stack->size > 0))
             {
-                fprintf(stdout, "Both objects are <");
+                object1_part_of_definition = StackPop(path1_stack);
+                object2_part_of_definition = StackPop(path2_stack);
+                StackPush(path1_stack, object1_part_of_definition);
+                StackPush(path2_stack, object2_part_of_definition);
 
-                while ((path1_stack->size > 0) && (path2_stack->size > 0))
+                if (!strcmp(object1_part_of_definition, object2_part_of_definition))
                 {
-                    object1_part_of_definition = StackPop(path1_stack);
-                    object2_part_of_definition = StackPop(path2_stack);
+                    SayAndWrite("Both objects are");
 
-                    if (!strcmp(object1_part_of_definition, object2_part_of_definition))
+                    while ((path1_stack->size > 0) && (path2_stack->size > 0))
                     {
-                        fprintf(stdout, " %s", object1_part_of_definition);
+                        object1_part_of_definition = StackPop(path1_stack);
+                        object2_part_of_definition = StackPop(path2_stack);
 
-                        if (strcasecmp(object1_part_of_definition, Negation_str))
-                            fprintf(stdout, " \b,");
+                        if (!strcmp(object1_part_of_definition, object2_part_of_definition))
+                        {
+                            FmtSayAndWrite(" %s", object1_part_of_definition);
+
+                            if (strcasecmp(object1_part_of_definition, Negation_str))
+                                fprintf(stdout, " \b,");
+                        }
+
+                        else
+                        {
+                            StackPush(path1_stack, object1_part_of_definition);
+                            StackPush(path2_stack, object2_part_of_definition);
+
+                            fprintf(stdout, "\b");
+
+                            break;
+                        }
                     }
 
-                    else
-                    {
-                        StackPush(path1_stack, object1_part_of_definition);
-                        StackPush(path2_stack, object2_part_of_definition);
-
-                        fprintf(stdout, "\b");
-
-                        break;
-                    }
+                    SayAndWrite(", BUT:\n");
                 }
 
-                fprintf(stdout, " >, BUT:\n");
+                else
+                    SayAndWrite("Objects don't have anything in common:\n");
             }
 
-            else
-                fprintf(stdout, "Objects don't have anything in common:\n");
-        }
+            PrintPath(COMPARING_MODE, stdout);
+            FmtSayAndWrite("%s is ", object1_name);
+            WriteObjectFeatures(stdout, path1_stack);
 
-        PrintPath(COMPARING_MODE, stdout);
-        fprintf(stdout, "\"%s\" is ", object1_name);
+            SayAndWrite("\b, MEANWHILE:\n");
 
-        while (path1_stack->size > 0)
-        {
-            object1_part_of_definition = StackPop(path1_stack);
-            fprintf(stdout, "%s ", object1_part_of_definition);
-
-            if (strcasecmp(object1_part_of_definition, Negation_str) && path1_stack->size)
-                fprintf(stdout, "\b, ");
-        }
-
-        fprintf(stdout, "\b, MEANWHILE:\n");
-        PrintPath(COMPARING_MODE, stdout);
-        fprintf(stdout, "\"%s\" is ", object2_name);
-
-        while (path2_stack->size > 0)
-        {
-            object2_part_of_definition = StackPop(path2_stack);
-            fprintf(stdout, "%s ", object2_part_of_definition);
-
-            if (strcasecmp(object2_part_of_definition, Negation_str) && path2_stack->size)
-                fprintf(stdout, "\b, ");
+            PrintPath(COMPARING_MODE, stdout);
+            FmtSayAndWrite("%s is ", object2_name);
+            WriteObjectFeatures(stdout, path2_stack);
         }
 
         fprintf(stdout, "\n\n");
@@ -642,22 +659,33 @@ int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_na
 
 int ShowDatabase(Tree* tree, int mode, const char* database_filename, const char* database_name)
 {
-    // PrintPath(SHOW_MODE, stdout);
-    // fprintf(stdout, "Show database mode:\n");
+    ASSERT(tree != nullptr);
+    ASSERT(database_filename != nullptr);
+    ASSERT(database_name != nullptr);
+    VERIFY_TREE(tree);
 
     FILE* dot_file = fopen(TEXT_FOR_DOT_DUMP_FILENAME, "w");
+    ASSERT(dot_file != nullptr);
 
     if (mode == GAME_DUMP_MODE)
+    {
+        PrintPath(SHOW_MODE, stdout);
+        SayAndWrite("Let's see");
+        FmtSayAndWrite(" «%s» ", database_name);
+        SayAndWrite("database!:\n");
+
         TreeDotDumpForShow(tree, dot_file);
+    }
 
     else
         TreeFullDotDump(tree, dot_file);
 
     fclose(dot_file);
 
-    system("dot " TEXT_FOR_DOT_DUMP_FILENAME " -Tsvg -o ./DatabaseDump.svg");
+    system("dot " TEXT_FOR_DOT_DUMP_FILENAME " -Tsvg -o" DATABASE_DUMP_PICTURE_FOLDER DATABASE_DUMP_PICTURE_FILENAME);
 
-    FILE* file_html = fopen(DATABASE_DUMP_HTML_FILE, "w+");
+    FILE* file_html = fopen(DATABASE_DUMP_HTML_FILENAME, "w+");
+    ASSERT(file_html != nullptr);
 
     fseek(file_html, 0, SEEK_SET);
 
@@ -670,7 +698,7 @@ int ShowDatabase(Tree* tree, int mode, const char* database_filename, const char
                         real_time->tm_mday, 1 + real_time->tm_mon, 1900 + real_time->tm_year);
 
     fprintf(file_html,  "    \n"
-                        "        <img src = \"./DatabaseDump.svg\">\n"
+                        "        <img src = \"" DATABASE_DUMP_PICTURE_FILENAME "\">\n"
                         "    <hr>\n");
                         // "<!-- ------------------------------------------------------------ -->\n");
 
@@ -679,7 +707,7 @@ int ShowDatabase(Tree* tree, int mode, const char* database_filename, const char
     fclose(file_html);
 
     #ifndef NOPEN_DUMPS
-    system("xdg-open \"./DatabaseDump.html\"");
+    system("xdg-open " DATABASE_DUMP_HTML_FILENAME);
     #endif
 
     return 1;
@@ -687,6 +715,10 @@ int ShowDatabase(Tree* tree, int mode, const char* database_filename, const char
 
 int TreeFullDotDump(Tree* tree, FILE* dot_file)
 {
+    ASSERT(tree != nullptr);
+    ASSERT(dot_file != nullptr);
+    VERIFY_TREE(tree);
+
     fprintf(dot_file, "digraph G{\n");
 
     fprintf(dot_file, "    rankdir = TB;\n"
@@ -701,9 +733,13 @@ int TreeFullDotDump(Tree* tree, FILE* dot_file)
     return 1;
 }
 
-void TreeCreateFullDotNodes(Node* node, FILE* dot_file)
+int TreeCreateFullDotNodes(Node* node, FILE* dot_file)
 {
-    if (!node) return;
+    ASSERT(node != nullptr);
+    ASSERT(dot_file != nullptr);
+    VERIFY_NODE(node);
+
+    if (!node) return 0;
 
     fprintf(dot_file, "    node%ld [shape = record, style = filled, fillcolor = lightblue, label = \"{ <data> data:\\n %s | <prev> prev:\\n%p | { <left> left:\\n%p | <right> right:\\n%p }}\"];\n",
                       node->index, node->data, node->prev, node->left, node->right);
@@ -711,11 +747,17 @@ void TreeCreateFullDotNodes(Node* node, FILE* dot_file)
     if (node->left) TreeCreateFullDotNodes(node->left, dot_file);
 
     if (node->right) TreeCreateFullDotNodes(node->right, dot_file);
+
+    return 1;
 }
 
-void TreeCreateFullDotEdges(Node* node, FILE* dot_file)
+int TreeCreateFullDotEdges(Node* node, FILE* dot_file)
 {
-    if (!node) return;
+    ASSERT(node != nullptr);
+    ASSERT(dot_file != nullptr);
+    VERIFY_NODE(node);
+
+    if (!node) return 0;
 
     if (node->left)
     {
@@ -728,10 +770,16 @@ void TreeCreateFullDotEdges(Node* node, FILE* dot_file)
         TreeCreateFullDotEdges(node->right, dot_file);
         fprintf(dot_file, "    node%ld: <right> -> node%ld;\n", node->index, node->right->index);
     }
+
+    return 1;
 }
 
 int TreeDotDumpForShow(Tree* tree, FILE* dot_file)
 {
+    ASSERT(tree != nullptr);
+    ASSERT(dot_file != nullptr);
+    VERIFY_TREE(tree);
+
     fprintf(dot_file, "digraph G{\n");
 
     fprintf(dot_file, "    rankdir = TB;\n"
@@ -746,9 +794,13 @@ int TreeDotDumpForShow(Tree* tree, FILE* dot_file)
     return 1;
 }
 
-void TreeCreateDotNodesForShow(Node* node, FILE* dot_file)
+int TreeCreateDotNodesForShow(Node* node, FILE* dot_file)
 {
-    if (!node) return;
+    ASSERT(node != nullptr);
+    ASSERT(dot_file != nullptr);
+    VERIFY_NODE(node);
+
+    if (!node) return 0;
 
     fprintf(dot_file, "    node%ld [shape = rectangle, style = filled, fillcolor = pink, label = \"%s", node->index, node->data);
 
@@ -759,11 +811,17 @@ void TreeCreateDotNodesForShow(Node* node, FILE* dot_file)
     if (node->left) TreeCreateDotNodesForShow(node->left, dot_file);
 
     if (node->right) TreeCreateDotNodesForShow(node->right, dot_file);
+
+    return 1;
 }
 
-void TreeCreateDotEdgesForShow(Node* node, FILE* dot_file)
+int TreeCreateDotEdgesForShow(Node* node, FILE* dot_file)
 {
-    if (!node) return;
+    ASSERT(node != nullptr);
+    ASSERT(dot_file != nullptr);
+    VERIFY_NODE(node);
+
+    if (!node) return 0;
 
     if (node->left)
     {
@@ -776,4 +834,6 @@ void TreeCreateDotEdgesForShow(Node* node, FILE* dot_file)
         TreeCreateDotEdgesForShow(node->right, dot_file);
         fprintf(dot_file, "    node%ld -> node%ld [label = \"нет\", color = red];\n", node->index, node->right->index);
     }
+
+    return 1;
 }
