@@ -6,6 +6,7 @@
 #include "./Tree.h"
 
 size_t NodeIndex = 0;
+char Root_data[] = "Noname";
 
 int NodeCtor(Node* node, char* data)
 {
@@ -59,8 +60,13 @@ int NodeConnect(Tree* tree, Node* left, Node* right, Node* root)
     return 1;
 }
 
-int TreeCtor(Tree* tree, Node* root)
+int TreeCtor(Tree* tree)
 {
+    Node* root = (Node*) calloc(1, sizeof(Node));
+    char* root_data = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+    root_data = strcpy(root_data, Root_data);
+    NodeCtor(root, root_data);
+
     *tree = {root, 1};
 
     return 1;

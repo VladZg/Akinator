@@ -1,5 +1,6 @@
 #include "./Config.h"
 #include <stdlib.h>
+#include <time.h>
 #include "./Constants.h"
 #include "./DefineColourConsts.h"
 #include "./Stack/Stack.h"
@@ -7,30 +8,35 @@
 #include "./Database.h"
 #include "./Game.h"
 
+// char NotStr[]   = "not";
+// char NeStr[]    = "ne";
+// char MinusStr[] = "---";
+
+// char* Negation_strings[] = {NotStr, NeStr, MinusStr};
 char Negation_str[] = "not";
-char Root_data[] = "Noname";
-size_t Database_format_shift = 0;
 size_t TreeNodeNumber = 0;
 
-int StartGame()
-{
-    FILE* database_file = fopen(DATABASE_FILENAME, "r");
+// static char* PickNegationString()
+// {
+//     return Negation_strings[rand() % 3];
+// }
 
-    Node* root = (Node*) calloc(1, sizeof(Node));
-    char* root_data = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
-    root_data = strcpy(root_data, Root_data);
-    NodeCtor(root, root_data);
+int StartGame(const char* database_filename)
+{
+    FILE* database_file = fopen(database_filename, "r");
+
+    char database_name[MAX_DATABASE_NAME] = {};
+    ReadDatabaseName(database_file, database_name);
 
     Tree tree = {};
-    TreeCtor(&tree, root);
+    TreeCtor(&tree);
 
-    char* new_node_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
-
-    int is_subnodes = 0;
     tree.root = ReadDatabaseToTree(&tree, database_file, tree.root);
     fclose(database_file);
 
     fprintf(stdout, "Вас приветствует Akinator!\n\n"
+
+                    "Загружена база данных \"%s\" из \"%s\"\n\n"
 
                     "Выберите режим игры из предложенных:\n"
                     "(1) Угадать объект\n"
@@ -39,7 +45,7 @@ int StartGame()
                     "(4) Отобразить существующую базу данных\n"
 
                     "\nДля вовзврата из режима в главное меню нажмите 'q', находясь а выбранном режиме\n"
-                    "Для выхода из игры нажмите 'q', находясь в главном меню\n");
+                    "Для выхода из игры нажмите 'q', находясь в главном меню\n", database_name, database_filename);
 
     char mode = '\0';
 
@@ -70,7 +76,7 @@ int StartGame()
 
             case '4':
             {
-                ShowDatabase(&tree, GAME_DUMP_MODE);
+                ShowDatabase(&tree, GAME_DUMP_MODE, database_filename, database_name);
                 break;
             }
 
@@ -106,8 +112,8 @@ int StartGame()
 
     } while (mode != 'q');
 
-    database_file = fopen(DATABASE_FILENAME, "w");
-    WriteTreeInDatabase(database_file, &tree);
+    database_file = fopen(database_filename, "w");
+    WriteTreeInDatabase(database_file, &tree, database_name);
     TreeDtor(&tree);
     fclose(database_file);
 
@@ -634,7 +640,7 @@ int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_na
     return 0;
 }
 
-int ShowDatabase(Tree* tree, int mode)
+int ShowDatabase(Tree* tree, int mode, const char* database_filename, const char* database_name)
 {
     // PrintPath(SHOW_MODE, stdout);
     // fprintf(stdout, "Show database mode:\n");
@@ -655,8 +661,13 @@ int ShowDatabase(Tree* tree, int mode)
 
     fseek(file_html, 0, SEEK_SET);
 
+    time_t now        = time(0);
+    tm     *real_time = localtime(&now);
+
     fprintf(file_html, "<pre>\n");
-    fprintf(file_html, "    <h1> DATABASE (%s) </h1>\n", "time");
+    fprintf(file_html, "    <h1> DATABASE \"%s\" from \"%s\" (%02d:%02d:%02d  %02d.%02d.%04d) </h1>\n", database_name, database_filename,
+                        real_time->tm_hour, real_time->tm_min, real_time->tm_sec,
+                        real_time->tm_mday, 1 + real_time->tm_mon, 1900 + real_time->tm_year);
 
     fprintf(file_html,  "    \n"
                         "        <img src = \"./DatabaseDump.svg\">\n"
@@ -679,7 +690,7 @@ int TreeFullDotDump(Tree* tree, FILE* dot_file)
     fprintf(dot_file, "digraph G{\n");
 
     fprintf(dot_file, "    rankdir = TB;\n"
-                      "    node[ colour = black, shape = rectangle, fontsize = 12 ];\n"
+                      "    node[ colour = black, shape = rectangle, fontsize = 10 ];\n"
                       "    edge[ colour = black ];\n");
 
     TreeCreateFullDotNodes(tree->root, dot_file);
@@ -694,7 +705,7 @@ void TreeCreateFullDotNodes(Node* node, FILE* dot_file)
 {
     if (!node) return;
 
-    fprintf(dot_file, "    node%ld [shape = record, style = filled, fillcolor = lightblue, label = \"{ <data> %s | <prev> prev:\\n%p | { <left> left:\\n%p | <right> right:\\n%p }}\"];\n",
+    fprintf(dot_file, "    node%ld [shape = record, style = filled, fillcolor = lightblue, label = \"{ <data> data:\\n %s | <prev> prev:\\n%p | { <left> left:\\n%p | <right> right:\\n%p }}\"];\n",
                       node->index, node->data, node->prev, node->left, node->right);
 
     if (node->left) TreeCreateFullDotNodes(node->left, dot_file);
@@ -739,7 +750,11 @@ void TreeCreateDotNodesForShow(Node* node, FILE* dot_file)
 {
     if (!node) return;
 
-    fprintf(dot_file, "    node%ld [shape = rectangle, style = filled, fillcolor = lightblue, label = \"%s\"];\n", node->index, node->data);
+    fprintf(dot_file, "    node%ld [shape = rectangle, style = filled, fillcolor = pink, label = \"%s", node->index, node->data);
+
+    if (node->left || node->right) fprintf(dot_file, "?");
+
+    fprintf(dot_file, "\"];\n");
 
     if (node->left) TreeCreateDotNodesForShow(node->left, dot_file);
 

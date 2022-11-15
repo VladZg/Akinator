@@ -1,9 +1,22 @@
 #include <stdlib.h>
+#include <string.h>
+#include "./CheckFile.h"
 
-int main()
+const char  DATABASE_FILENAME_DEFAULT[] = "./Database.txt";
+const char* DATABASE_FILENAME           = nullptr;
+
+int main(const int argc, const char** argv)
 {
+    if (!CheckFile(argc, argv, &DATABASE_FILENAME))
+        DATABASE_FILENAME = DATABASE_FILENAME_DEFAULT;
+
     system("g++ main.cpp ./Stack/Stack.cpp ./Stack/Log.cpp ./Tree.cpp ./Game.cpp ./Database.cpp -o main");
-    system("./main");
+
+    char cmd[100] = "./main ";
+
+    strcat(cmd, DATABASE_FILENAME);
+
+    system(cmd);
 
     return 1;
 }

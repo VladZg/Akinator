@@ -25,7 +25,7 @@ int NodeCtor(Node* node, char* data);
 int NodeDtor(Node* node);
 int NodeConnect(Tree* tree, Node* left, Node* right, Node* root);
 
-int TreeCtor(Tree* tree, Node* root);
+int TreeCtor(Tree* tree);
 int TreeDtor(Tree* tree);
 
 void TreePreorderPrint (const Node* node, FILE* stream);

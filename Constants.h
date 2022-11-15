@@ -6,7 +6,8 @@
 
 enum Constants
 {
-    MAX_OBJECT_NAME = 50,
+    MAX_OBJECT_NAME   = 50,
+    MAX_DATABASE_NAME = 50,
 };
 
 enum GameModes

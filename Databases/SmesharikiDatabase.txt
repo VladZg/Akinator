@@ -1,0 +1,30 @@
+"What smesharik are you?" database
+
+{ "has a square body shape"
+    { "secret square smesharik" }
+    { "child"
+        { "has igolki"
+            { "Ezhik" }
+            { "girl"
+                { "Nyusha" }
+                { "write poems"
+                    { "Barash" }
+                    { "Krosh" }
+                }
+            }
+        }
+        { "adult"
+            { "likes honey"
+                { "Kopatych" }
+                { "woman"
+                    { "Sovunia" }
+                    { "engeneer"
+                        { "Pin" }
+                        { "Kar-Karych" }
+                    }
+                }
+            }
+            { "Noname" }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+"Who are you from Winx???" database
+
+{ "boy"
+    { "a friend of Bloom"
+        { "boy1" }
+        { "boy2" }
+    }
+    { "the most famous character"
+        { "Bloom!" }
+        { "Noname" }
+    }
+}
