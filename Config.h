@@ -1,5 +1,5 @@
 #define NLOGGING
-// #define NOPEN_DUMPS
+#define NOPEN_DUMPS
 // #define NDEBUG
-// #define SHUT_UP
+#define SHUT_UP
 

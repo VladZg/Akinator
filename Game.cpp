@@ -36,18 +36,21 @@ int StartGame(const char* database_filename)
     tree.root = ReadDatabaseToTree(database_file, &tree);
     fclose(database_file);
 
-    fprintf(stdout, "Вас приветствует Akinator!\n\n"
+    SayAndWrite("Hi, my name is Akinator!\n\n");
 
-                    "Загружена база данных \"%s\" из \"%s\"\n\n"
+    fprintf(stdout, "Specially for that game database «%s» is loaded from «%s»\n\n", database_name, database_filename);
+    FmtSay("Specially for that game . database . «%s» is loaded from «%s»", database_name, database_filename);
 
-                    "Выберите режим игры из предложенных:\n"
-                    "(1) Угадать объект\n"
-                    "(2) Дать определение существующему объекту\n"
-                    "(3) Сравнить 2 существующих объекта\n"
-                    "(4) Отобразить существующую базу данных\n"
+    fprintf(stdout, "Choose one of the options below:\n"
+                    "(1) Guess object\n"
+                    "(2) Give a definition to an existing object\n"
+                    "(3) Compare 2 existing objects\n"
+                    "(4) Show database in real time\n"
 
                     "\nДля вовзврата из режима в главное меню нажмите 'q', находясь а выбранном режиме\n"
-                    "Для выхода из игры нажмите 'q', находясь в главном меню\n", database_name, database_filename);
+                    "Для выхода из игры нажмите 'q', находясь в главном меню\n");
+
+    Say("Let's play! Choose one of the options from the menu!");
 
     char mode = '\0';
 
@@ -103,7 +106,7 @@ int StartGame(const char* database_filename)
             default:
             {
                 PrintPath(NO_MODE, stdout);
-                fprintf(stdout, "Такого режима не существует выберете заново:");
+                fprintf(stdout, "There is no such option, choose again:");
                 break;
             }
         }
@@ -141,13 +144,12 @@ int ShowModes()
 
 int ShowRools()
 {
-
     PrintPath(MENU_MODE, stdout);
-    fprintf(stdout, "Выберите режим из предложенных в меню (команда 'm')\n");
+    SayAndWrite("Выберите режим из предложенных в меню (команда 'm')\n");
     PrintPath(MENU_MODE, stdout);
-    fprintf(stdout, "Для возврата из режима в главное меню нажмите 'q', находясь а выбранном режиме\n");
+    SayAndWrite("Для возврата из режима в главное меню нажмите 'q', находясь а выбранном режиме\n");
     PrintPath(MENU_MODE, stdout);
-    fprintf(stdout, "Для выхода из игры нажмите 'q', находясь в главном меню\n");
+    SayAndWrite("Для выхода из игры нажмите 'q', находясь в главном меню\n");
 
     return 1;
 }
@@ -196,7 +198,9 @@ void PrintPath(int mode, FILE* stream)
 
 int FinishGame()
 {
-    fprintf(stdout, "\nИгра окончена!\n");
+    // fprintf(stdout, "\nИгра окончена!\n");
+    SayAndWrite("\nThe game is finished,\n"
+                "Thanks for it! Bye!\n");
 
     return 1;
 }
@@ -260,7 +264,7 @@ int StartGuessMode(Tree* tree)
     CleanInputBuffer();
 
     PrintPath(GUESSING_MODE, stdout);
-    fprintf(stdout, "Загадайте объект и введите 's' для начала отгадывания:\n");
+    fprintf(stdout, "Choose an object and type 's' to start guessing:\n");
     PrintPath(GUESSING_MODE, stdout);
 
     char user_cmd[MAX_OBJECT_NAME] = {};
@@ -282,7 +286,7 @@ int StartGuessMode(Tree* tree)
         CleanInputBuffer();
 
         PrintPath(GUESSING_MODE, stdout);
-        fprintf(stdout, "Заново загадайте объект и введите 's' для начала отгадывания:\n");
+        fprintf(stdout, "Choose an object again and type 's' to start guessing:\n");
         PrintPath(GUESSING_MODE, stdout);
 
         fscanf(stdin, "%[^\n]s", user_cmd);
@@ -418,27 +422,21 @@ int StartDefinitionMode(Tree* tree)
     ASSERT(tree != nullptr);
     VERIFY_TREE(tree);
 
-    CleanInputBuffer();
-
-    PrintPath(DEFINITION_MODE, stdout);
-    fprintf(stdout, "Введите название объекта, которому хотите дать определение:\n");
-    PrintPath(DEFINITION_MODE, stdout);
-
     char object_name[MAX_OBJECT_NAME] = {};
-    fscanf(stdin, "%[^\n]s", object_name);
 
-    while (strcasecmp(object_name, "q"))
+    do
     {
         GiveObjectDefinition(tree, object_name);
 
         CleanInputBuffer();
 
         PrintPath(DEFINITION_MODE, stdout);
-        fprintf(stdout, "Введите назвние объекта, которому хотите дать определение:\n");
+        fprintf(stdout, "Type a name of the object which definition you want to get know:\n");
         PrintPath(DEFINITION_MODE, stdout);
 
         fscanf(stdin, "%[^\n]s", object_name);
-    }
+
+    } while (strcasecmp(object_name, "q"));
 
     return 1;
 }
@@ -480,8 +478,9 @@ int WriteObjectDefinition(FILE* out_stream, Stack* path_stack, const char* objec
 int GiveObjectDefinition(Tree* tree, const char* object_name)
 {
     ASSERT(tree != nullptr);
-    ASSERT(object_name != nullptr);
     VERIFY_TREE(tree);
+
+    if (!object_name) return 0;
 
     PrintPath(DEFINITION_MODE, stdout);
 
@@ -509,40 +508,28 @@ int StartComparingMode(Tree* tree)
     ASSERT(tree != nullptr);
     VERIFY_TREE(tree);
 
-    CleanInputBuffer();
-
-    PrintPath(COMPARING_MODE, stdout);
-    fprintf(stdout, "Введите название первого объекта сравнения:\n");
-    PrintPath(COMPARING_MODE, stdout);
     char object1_name[MAX_OBJECT_NAME] = {};
-    fscanf(stdin, "%[^\n]s", object1_name);
-
-    CleanInputBuffer();
-
-    PrintPath(COMPARING_MODE, stdout);
-    fprintf(stdout, "Введите название второго объекта сравнения:\n");
-    PrintPath(COMPARING_MODE, stdout);
     char object2_name[MAX_OBJECT_NAME] = {};
-    fscanf(stdin, "%[^\n]s", object2_name);
 
-    while (strcasecmp(object1_name, "q") && strcasecmp(object2_name, "q"))
+    do
     {
         ComapareObjects(tree, object1_name, object2_name);
 
         CleanInputBuffer();
 
         PrintPath(COMPARING_MODE, stdout);
-        fprintf(stdout, "Введите название первого объекта сравнения:\n");
+        fprintf(stdout, "Type a name of the first comparing object:\n");
         PrintPath(COMPARING_MODE, stdout);
         fscanf(stdin, "%[^\n]s", object1_name);
 
         CleanInputBuffer();
 
         PrintPath(COMPARING_MODE, stdout);
-        fprintf(stdout, "Введите название второго объекта сравнения:\n");
+        fprintf(stdout, "Type a name of the second comparing object:\n");
         PrintPath(COMPARING_MODE, stdout);
         fscanf(stdin, "%[^\n]s", object2_name);
-    }
+
+    } while (strcasecmp(object1_name, "q") && strcasecmp(object2_name, "q"));
 
     return 1;
 }
@@ -550,9 +537,9 @@ int StartComparingMode(Tree* tree)
 int ComapareObjects(Tree* tree, const char* object1_name, const char* object2_name)
 {
     ASSERT(tree != nullptr);
-    ASSERT(object1_name != nullptr);
-    ASSERT(object2_name != nullptr);
     VERIFY_TREE(tree);
+
+    if (!(object1_name || object2_name)) return 0;
 
     PrintPath(COMPARING_MODE, stdout);
 

@@ -22,20 +22,20 @@ int main(const int argc, const char** argv)
 
     StartGame(DATABASE_FILENAME);
 
-    FILE* database_file = fopen(DATABASE_FILENAME, "r");
-    ASSERT(database_file != nullptr);
-
-    char database_name[MAX_DATABASE_NAME] = {};
-    ReadDatabaseName(database_file, database_name);
-
-    Tree tree = {};
-    TreeCtor(&tree);
-
-    tree.root = ReadDatabaseToTree(database_file, &tree);
-    fclose(database_file);
-
-    ShowDatabase(&tree, DEBUG_DUMP_MODE, DATABASE_FILENAME, database_name);
-    TreeDtor(&tree);
+//     FILE* database_file = fopen(DATABASE_FILENAME, "r");
+//     ASSERT(database_file != nullptr);
+//
+//     char database_name[MAX_DATABASE_NAME] = {};
+//     ReadDatabaseName(database_file, database_name);
+//
+//     Tree tree = {};
+//     TreeCtor(&tree);
+//
+//     tree.root = ReadDatabaseToTree(database_file, &tree);
+//     fclose(database_file);
+//
+//     ShowDatabase(&tree, DEBUG_DUMP_MODE, DATABASE_FILENAME, database_name);
+//     TreeDtor(&tree);
 
     return 1;
 }
