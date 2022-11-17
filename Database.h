@@ -1,6 +1,7 @@
 #ifndef DATABASE_H
 #define DATABASE_H
 
+int PrepareTreeForReadDatabase(Tree* tree);
 int   ReadDatabaseName   (FILE* database_file, char* database_name);
 Node* ReadDatabaseToTree (FILE* database_file, Tree* tree);
 int   WriteTreeInDatabase(FILE* database_file, Tree* tree, const char* database_name);

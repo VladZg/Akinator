@@ -37,6 +37,17 @@ int ReadDatabaseName(FILE* database_file, char* database_name)
     return 1;
 }
 
+int PrepareTreeForReadDatabase(Tree* tree)
+{
+    ASSERT(tree != nullptr);
+    VERIFY_TREE(tree);
+
+    free(tree->root->data);
+    free(tree->root);
+
+    return 1;
+}
+
 Node* ReadDatabaseToTree(FILE* database_file, Tree* tree)
 {
     ASSERT(tree != nullptr);

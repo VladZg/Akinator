@@ -33,9 +33,7 @@ int StartGame(const char* database_filename)
     Tree tree = {};
     TreeCtor(&tree);
 
-    free(tree.root->data);
-    free(tree.root);
-
+    PrepareTreeForReadDatabase(&tree);
     tree.root = ReadDatabaseToTree(database_file, &tree);
     fclose(database_file);
 
