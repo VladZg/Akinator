@@ -33,6 +33,9 @@ int StartGame(const char* database_filename)
     Tree tree = {};
     TreeCtor(&tree);
 
+    free(tree.root->data);
+    free(tree.root);
+
     tree.root = ReadDatabaseToTree(database_file, &tree);
     fclose(database_file);
 
@@ -480,7 +483,7 @@ int GiveObjectDefinition(Tree* tree, const char* object_name)
     ASSERT(tree != nullptr);
     VERIFY_TREE(tree);
 
-    if (!object_name) return 0;
+    if (!strcmp(object_name, "")) return 0;
 
     PrintPath(DEFINITION_MODE, stdout);
 

@@ -18,10 +18,10 @@ int NodeVerify(const Node* node)
     if (!node->data) return 0;
 
     if (node->left)
-        if (!(node == node->left->prev)) return 0;
+        if (!((node == node->left->prev) && NodeVerify(node->left))) return 0;
 
     if (node->right)
-        if (!(node == node->right->prev)) return 0;
+        if (!((node == node->right->prev) && NodeVerify(node->right))) return 0;
 
     return 1;
 }
