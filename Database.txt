@@ -1,0 +1,45 @@
+"Who are you from Vlad's friends?" database
+
+{ "man"
+    { "Vlad's friend"
+        { "lives in 229"
+            { "not lives everyday"
+                { "Sosed" }
+                { "Dimas" }
+            }
+            { "lives in England"
+                { "Fedos" }
+                { "studies at FOPF"
+                    { "loves matan"
+                        { "Vova L" }
+                        { "Sanya" }
+                    }
+                    { "Vlad's mentor"
+                        { "Vovchik" }
+                        { "studies at MGTU Baumana"
+                            { "a friend from child camp"
+                                { "Artemiy" }
+                                { "Danya" }
+                            }
+                            { "Kirill" }
+                        }
+                    }
+                }
+            }
+        }
+        { "Vlad" }
+    }
+    { "ginger"
+        { "Anya" }
+        { "studies at MGIMO"
+            { "learn law"
+                { "Nastya K" }
+                { "Masha" }
+            }
+            { "from Vlad's family"
+                { "Anechka" }
+                { "Noname" }
+            }
+        }
+    }
+}
