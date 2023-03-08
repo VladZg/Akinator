@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include "./Constants.h"
 #include "./DefineColourConsts.h"
-#include "./Stack/Stack.h"
+#include "../Libs/Stack/Include/Stack.h"
 #include "./Tree.h"
 #include "./Database.h"
 

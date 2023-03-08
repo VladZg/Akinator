@@ -1,10 +1,10 @@
-#include "./Config.h"
+#include "../Include/Config.h"
 #include <stdlib.h>
-#include "./Constants.h"
-#include "./DefineColourConsts.h"
-#include "./Stack/Assert.h"
-#include "./Stack/Stack.h"
-#include "./Tree.h"
+#include "../Include/Constants.h"
+#include "../Include/DefineColourConsts.h"
+#include "../Libs/Stack/Include/Assert.h"
+#include "../Libs/Stack/Include/Stack.h"
+#include "../Include/Tree.h"
 
 
 size_t NodeIndex = 0;
@@ -156,11 +156,11 @@ void TreeInorderPrint(const Node* node, FILE* stream)
 
     fprintf(stream, "(");
 
-    if (node->left) TreePreorderPrint(node->left, stream);
+    if (node->left) TreeInorderPrint(node->left, stream);
 
     fprintf(stream, " \"%s\" ", node->data);
 
-    if (node->right) TreePreorderPrint(node->right, stream);
+    if (node->right) TreeInorderPrint(node->right, stream);
 
     fprintf(stream, ")");
 }
@@ -174,9 +174,9 @@ void TreePostorderPrint(const Node* node, FILE* stream)
 
     fprintf(stream, "(");
 
-    if (node->left) TreePreorderPrint(node->left, stream);
+    if (node->left) TreePostorderPrint(node->left, stream);
 
-    if (node->right) TreePreorderPrint(node->right, stream);
+    if (node->right) TreePostorderPrint(node->right, stream);
 
     fprintf(stream, " \"%s\" ", node->data);
 

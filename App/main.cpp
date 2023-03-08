@@ -1,18 +1,18 @@
-#include "./Config.h"
+#include "../Include/Config.h"
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <cstdio>
 #include <cstring>
-#include "./Constants.h"
-#include "./DefineColourConsts.h"
-#include "./Stack/Assert.h"
-#include "./Stack/Stack.h"
-#include "./Tree.h"
-#include "./Game.h"
-#include "./Database.h"
-#include "./CheckFile.h"
+#include "../Include/Constants.h"
+#include "../Include/DefineColourConsts.h"
+#include "../Libs/Stack/Include/Assert.h"
+#include "../Libs/Stack/Include/Stack.h"
+#include "../Include/Tree.h"
+#include "../Include/Game.h"
+#include "../Include/Database.h"
+#include "../Include/CheckFile.h"
 
-const char  DATABASE_FILENAME_DEFAULT[] = "./Database.txt";
+const char  DATABASE_FILENAME_DEFAULT[] = "./Databases/Database_default.txt";
 const char* DATABASE_FILENAME           = nullptr;
 
 int main(const int argc, const char** argv)

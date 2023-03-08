@@ -1,9 +1,9 @@
-#include "./Config.h"
+#include "../Include/Config.h"
 #include <stdio.h>
-#include "./Constants.h"
-#include "./DefineColourConsts.h"
-#include "./Stack/Assert.h"
-#include "./Tree.h"
+#include "../Include/Constants.h"
+#include "../Include/DefineColourConsts.h"
+#include "../Libs/Stack/Include/Assert.h"
+#include "../Include/Tree.h"
 
 size_t Database_format_shift = 0;
 
@@ -52,7 +52,7 @@ Node* ReadDatabaseToTree(FILE* database_file, Tree* tree)
 {
     ASSERT(tree != nullptr);
     ASSERT(database_file != nullptr);
-    VERIFY_TREE(tree);
+    // VERIFY_TREE(tree);
 
 //     char cur = fgetc(database_file);
 //

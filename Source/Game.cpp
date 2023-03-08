@@ -1,14 +1,14 @@
-#include "./Config.h"
+#include "../Include/Config.h"
 #include <stdlib.h>
 #include <time.h>
-#include "./Constants.h"
-#include "./DefineColourConsts.h"
-#include "./Stack/Assert.h"
-#include "./Stack/Stack.h"
-#include "./Tree.h"
-#include "./Database.h"
-#include "./Speaker.h"
-#include "./Game.h"
+#include "../Include/Constants.h"
+#include "../Include/DefineColourConsts.h"
+#include "../Libs/Stack/Include/Assert.h"
+#include "../Libs/Stack/Include/Stack.h"
+#include "../Include/Tree.h"
+#include "../Include/Database.h"
+#include "../Include/Speaker.h"
+#include "../Include/Game.h"
 
 char Negation_str[] = "not";
 size_t TreeNodeNumber = 0;
@@ -36,6 +36,8 @@ int StartGame(const char* database_filename)
     PrepareTreeForReadDatabase(&tree);
     tree.root = ReadDatabaseToTree(database_file, &tree);
     fclose(database_file);
+
+    VERIFY_TREE(&tree);
 
     SayAndWrite("Hi, my name is Akinator!\n\n");
 
@@ -203,6 +205,8 @@ int FinishGame()
     SayAndWrite("\nThe game is finished,\n"
                 "Thanks for it! Bye!\n");
 
+    system("cd ./Databases; git add --all; git commit -m \"auto commit\"");
+
     return 1;
 }
 
@@ -311,6 +315,15 @@ int GuessObject(Tree* tree, Node* node)
     char user_answer = '\0';
     fscanf(stdin, "%c", &user_answer);
 
+    // Node* cur_node = tree->root;
+    // while (cur_node)
+    // {
+    //     if (user_answer == '+')
+    //          if (cur_node->left)
+    //              cur_node cur_node->left;
+    //     if ()
+    // }
+
     if (user_answer == '+')
     {
         PrintPath(GUESSING_MODE, stdout);
@@ -338,32 +351,25 @@ int GuessObject(Tree* tree, Node* node)
 
         else
         {
-            CleanInputBuffer();
+            char* new_object_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
+            ASSERT(new_object_name != nullptr);
 
-            fprintf(stdout, "Задайте характеристику новому объекту:\n");
+            fprintf(stdout, "Введите имя нового объекта:\n");
             PrintPath(GUESSING_MODE, stdout);
+            CleanInputBuffer();
+            fscanf(stdin, "%[^\n]s", new_object_name);
 
             char* new_object_question = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
             ASSERT(new_object_question != nullptr);
 
-            fscanf(stdin, "%[^\n]s", new_object_question);
-
+            PrintPath(GUESSING_MODE, stdout);
+            fprintf(stdout, "Задайте характеристику для %s:\n", new_object_name);
+            PrintPath(GUESSING_MODE, stdout);
             CleanInputBuffer();
-
-            PrintPath(GUESSING_MODE, stdout);
-            fprintf(stdout, "Введите имя нового объекта:\n");
-            PrintPath(GUESSING_MODE, stdout);
-
-            char* new_object_name = (char*) calloc(MAX_OBJECT_NAME, sizeof(char));
-            ASSERT(new_object_name != nullptr);
-
-            fscanf(stdin, "%[^\n]s", new_object_name);
+            fscanf(stdin, "%[^\n]s", new_object_question);
 
             if (IsObjectExist(tree->root, new_object_name))
             {
-                FILE* file = fopen(TEXT_FOR_PRONOUNCING_FILENAME, "w+");
-                ASSERT(file != nullptr);
-
                 PrintPath(GUESSING_MODE, stdout);
                 FmtSayAndWrite("Object \"%s\" is already exist:\n", new_object_name);
                 PrintPath(GUESSING_MODE, stdout);
@@ -372,7 +378,6 @@ int GuessObject(Tree* tree, Node* node)
                 ASSERT_OK(path_stack);
                 WriteObjectDefinition(stdout, path_stack, new_object_name);
 
-                fclose(file);
                 free(new_object_question);
                 free(new_object_name);
 

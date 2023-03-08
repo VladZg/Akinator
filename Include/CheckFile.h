@@ -3,7 +3,7 @@
 
 #include "./Config.h"
 #include <stdio.h>
-#include "./Stack/Assert.h"
+#include "../Libs/Stack/Include/Assert.h"
 
 size_t IsFileExist(const char* filename)
 {

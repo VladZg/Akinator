@@ -1,7 +1,10 @@
 "What smesharik are you?" database
 
 { "has a square body shape"
-    { "secret square smesharik" }
+    { "AbObA"
+        { "AbObA" }
+        { "secret square smesharik" }
+    }
     { "child"
         { "has igolki"
             { "Ezhik" }
@@ -24,7 +27,10 @@
                     }
                 }
             }
-            { "Noname" }
+            { "helps anybody anytime"
+                { "TxLib.h" }
+                { "Noname" }
+            }
         }
     }
 }

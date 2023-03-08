@@ -7,6 +7,9 @@
     }
     { "the most famous character"
         { "Bloom!" }
-        { "Noname" }
+        { "loves animals"
+            { "Fauna" }
+            { "Noname" }
+        }
     }
 }
