@@ -27,7 +27,10 @@
                 }
             }
         }
-        { "Vlad" }
+        { "new rommate"
+            { "Nikita" }
+            { "Vlad" }
+        }
     }
     { "ginger"
         { "Anya" }
